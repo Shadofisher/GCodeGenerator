@@ -3,7 +3,7 @@ from tkinter.ttk import Progressbar
 from tkinter import filedialog as fd
 from tkinter import Image
 from PIL import Image as ImagePIL
-from PIL import ImageTk
+from PIL import ImageTk,ImageEnhance
 
 from PIL import ImageFilter
 import numpy as np
@@ -36,12 +36,16 @@ var_blur = IntVar()
 var_contour = IntVar()
 var_smooth = IntVar()
 var_sharpen = IntVar()
+var_flipv = IntVar()
+var_fliph = IntVar()
 
 var1 = IntVar()
 var2 = IntVar()
 binarize = IntVar()
 scale1_var = IntVar()
 scale2_var = IntVar()
+scale3_var = IntVar()
+
 x_res = StringVar()
 y_res = StringVar()
 spacing = StringVar()
@@ -59,7 +63,11 @@ def process_data():
     print("Filname  to process: " + str(filename))
     img1 = ImagePIL.open(filename)
     img2 = img1.resize((500, 400))
+    enhancer = ImageEnhance.Contrast(img2)
+    img2 = enhancer.enhance(scale3_var.get()/10)
+
     img2 = ImageTk.PhotoImage(img2)
+
     panel = Label(master, image=img2, bg='green')
     panel.image = img2
     panel.place(x=50, y=450)
@@ -150,6 +158,12 @@ def convert_image():
     grey = img.convert("L")
     image_width, image_height = img.size
     edge = grey;
+    enhancer1 = ImageEnhance.Contrast(edge)
+    edge = enhancer1.enhance(scale3_var.get()/10)
+    if var_flipv.get()==1:
+        edge = edge.transpose(ImagePIL.FLIP_TOP_BOTTOM)
+    if var_fliph.get()==1:
+        edge = edge.transpose(ImagePIL.FLIP_LEFT_RIGHT)
     if var1.get() == 1:
         edge = edge.filter(ImageFilter.FIND_EDGES)
     if var_blur.get() == 1:
@@ -194,6 +208,11 @@ def scale_update2(x):
     # low_threshold = scale1
     low_threshold = scale2_var.get()
     convert_image()
+
+def scale_update3(x):
+    process_data()
+    convert_image()
+
 
 
 def get_pixel_coord(img_array, rows, cols):
@@ -578,6 +597,11 @@ def main():
     chk6 = Checkbutton(master, text="Sharpen", variable=var_sharpen, command=update_image)
     chk6.place(x=150, y=90)
 
+    chk7 = Checkbutton(master, text="Flip Vertical", variable=var_flipv, command=update_image)
+    chk7.place(x=240, y=90)
+    chk8 = Checkbutton(master, text="Flip Horizontal", variable=var_fliph, command=update_image)
+    chk8.place(x=360, y=90)
+
 
     progress1 = Progressbar(master, length=250, mode='determinate')
     progress1.place(x=20, y=250)
@@ -596,6 +620,14 @@ def main():
     scale2.bind("<ButtonRelease-1>", scale_update2)
     label_low_th = Label(master, text="Lower Black Threshold")
     label_low_th.place(x=280, y=220)
+
+    scale3 = Scale(master, from_=0, to=100, orien=HORIZONTAL, length=250, variable=scale3_var)
+    scale3.set(value=10)
+    scale3.place(x=140, y=110)
+    scale3.bind("<ButtonRelease-1>", scale_update3)
+    #label_low_th = Label(master, text="Contrast")
+    #label_low_th.place(x=320, y=220)
+
 
     tBox1 = Entry(master, text="Xres", textvariable=x_res, width=5)
     tBox1.insert(0, '400')
