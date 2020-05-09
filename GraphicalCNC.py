@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter.ttk import Progressbar
+from tkinter.ttk import Notebook
 from tkinter import filedialog as fd
 from tkinter import Image
 from PIL import Image as ImagePIL
@@ -9,9 +10,12 @@ from PIL import ImageFilter
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-
-
+tab1 = ''
+tab2 = ''
+tab3 = ''
+tab4 = ''
+tab5 = ''
+backup = ''
 image_width = 0
 image_height = 0
 g_threshold = 0
@@ -24,14 +28,19 @@ progress1 = ""
 labelprogress = ""
 
 master = Tk()
-c1 = Canvas(master, width=500, height=400, bg='lightgreen')
-panel2 = Label(master)
+c1 = ''
+
+
+nb2 = ''
+panel2 = ''
 
 filename = ""
 
 img1 = ""
 scale1 = ""
 
+gausradius = StringVar()
+var_gauss_blur = IntVar();
 var_blur = IntVar()
 var_contour = IntVar()
 var_smooth = IntVar()
@@ -45,7 +54,10 @@ binarize = IntVar()
 scale1_var = IntVar()
 scale2_var = IntVar()
 scale3_var = IntVar()
-
+scale4_var = StringVar()
+scale5_var = StringVar()
+safe_travel = StringVar()
+plunge_depth = StringVar()
 x_res = StringVar()
 y_res = StringVar()
 spacing = StringVar()
@@ -57,6 +69,8 @@ end_y = 0;
 
 convert_section = 0;
 
+nb2_tab1 = ''
+nb2_tab2 = ''
 
 def process_data():
     global filename, master, img1
@@ -72,6 +86,27 @@ def process_data():
     panel.image = img2
     panel.place(x=50, y=450)
 
+def process_data_advanced(x):
+    global filename, master, img1
+    print("Filname  to process: " + str(filename))
+    img1 = ImagePIL.open(filename)
+    img2 = img1.resize((500, 400))
+    enhancer = ImageEnhance.Contrast(img2)
+    img2 = enhancer.enhance(scale3_var.get()/10)
+    enhancer2 = ImageEnhance.Brightness(img2)
+    img2 = enhancer2.enhance(float(scale4_var.get()))
+    enhancer3 = ImageEnhance.Color(img2)
+    img2 = enhancer3.enhance(float(scale5_var.get()))
+
+
+
+    img2 = ImageTk.PhotoImage(img2)
+
+    panel = Label(master, image=img2, bg='green')
+    panel.image = img2
+    panel.place(x=50, y=450)
+    convert_image_advanced()
+
 
 def callback():
     global filename
@@ -79,6 +114,13 @@ def callback():
     filename = name
     print(name)
     process_data()
+
+def callback_advanced():
+    global filename
+    name = fd.askopenfilename()
+    filename = name
+    print(name)
+    process_data_advanced(x=0)
 
 
 def process_image():
@@ -131,7 +173,6 @@ def binarize_array(numpy_array, low_threshold=50, threshold=100):
     return numpy_array
 
 
-
 def modify_final():
     global image_to_show,image_width, image_height, panel2, g_threshold, edge, low_threshold, start_x, start_y, end_x, end_y, convert_section
     edge = np.array(edge)
@@ -141,13 +182,65 @@ def modify_final():
         edge = binarize_array_section(edge, start_x, start_y, end_x, end_y, low_threshold=int(low_threshold), threshold=int(g_threshold))
         edge = ImagePIL.fromarray(edge)
     image_to_show = ImageTk.PhotoImage(edge)
-    panel2 = Label(master, image=image_to_show)
+    panel2 = Label(nb2_tab1, image=image_to_show)
     panel2.image = image_to_show
-    panel2.place(x=650, y=450)
+    panel2.place(x=2, y=2)
     panel2.bind("<Button-1>", mouse_pressed_callback)
     panel2.bind("<ButtonRelease-1>", mouse_released_callback)
     edge.save('Newfile.png')
     #edge.show()
+
+
+def convert_image_advanced():
+    global nb2,nb2_tab1,image_to_show, image_width, image_height, panel2, g_threshold, edge, low_threshold, start_x, start_y, end_x, end_y, convert_section
+    print(img1.size)
+    panel2.destroy()
+    img = img1.resize((500, 400))
+    grey = img.convert("L")
+    image_width, image_height = img.size
+    edge = grey;
+
+    enhancer1 = ImageEnhance.Contrast(edge)
+    edge = enhancer1.enhance(scale3_var.get()/10)
+    enhancer2 = ImageEnhance.Brightness(edge)
+    edge = enhancer2.enhance(float(scale4_var.get()))
+    enhancer3 = ImageEnhance.Color(edge)
+    edge = enhancer3.enhance(float(scale5_var.get()))
+
+    if var_gauss_blur.get() == 1:
+        edge = edge.filter(ImageFilter.GaussianBlur(int(gausradius.get())))
+    if var_flipv.get() == 1:
+        edge = edge.transpose(ImagePIL.FLIP_TOP_BOTTOM)
+    if var_fliph.get()==1:
+        edge = edge.transpose(ImagePIL.FLIP_LEFT_RIGHT)
+    if var1.get() == 1:
+        edge = edge.filter(ImageFilter.FIND_EDGES)
+    if var_blur.get() == 1:
+        edge = edge.filter(ImageFilter.BLUR)
+    if var_contour.get() == 1:
+        edge = edge.filter(ImageFilter.CONTOUR)
+    if var_smooth.get() == 1:
+        edge = edge.filter(ImageFilter.SMOOTH)
+    if var_sharpen.get() == 1:
+        edge = edge.filter(ImageFilter.SHARPEN)
+
+
+    edge = np.array(edge)
+    if binarize.get() == 1:
+        edge = binarize_array(edge, low_threshold=int(low_threshold), threshold=int(g_threshold))
+
+    edge = ImagePIL.fromarray(edge)
+
+
+    image_to_show = ImageTk.PhotoImage(edge)
+    panel2 = Label(nb2_tab1, image=image_to_show)
+    panel2.image = image_to_show
+    #panel2.place(x=650, y=450)
+    panel2.place(x=2, y=2)
+    panel2.bind("<Button-1>", mouse_pressed_callback)
+    panel2.bind("<ButtonRelease-1>", mouse_released_callback)
+    #    edge.save('test.png')
+    print(edge.size)
 
 
 def convert_image():
@@ -175,7 +268,6 @@ def convert_image():
     if var_sharpen.get() == 1:
         edge = edge.filter(ImageFilter.SHARPEN)
 
-
     edge = np.array(edge)
     if binarize.get() == 1:
         edge = binarize_array(edge, low_threshold=int(low_threshold), threshold=int(g_threshold))
@@ -194,18 +286,32 @@ def convert_image():
     print(edge.size)
 
 
+
+
+def scale_update_advanced(x):
+    global g_threshold, x_res, y_res, image_resize_width, image_resize_height
+    g_threshold = scale1_var.get()
+    convert_image_advanced()
+
+
+def scale_update2_advanced(x):
+    global low_threshold, x_res, y_res, image_resize_width, image_resize_height
+    low_threshold = scale2_var.get()
+    convert_image_advanced()
+
+def scale_update3_advanced(x):
+    process_data_advanced(x=0)
+    convert_image_advanced()
+
+
 def scale_update(x):
     global g_threshold, x_res, y_res, image_resize_width, image_resize_height
-    # print("Threshold = " + str(x))
-    # g_threshold = int(x);
     g_threshold = scale1_var.get()
     convert_image()
 
 
 def scale_update2(x):
     global low_threshold, x_res, y_res, image_resize_width, image_resize_height
-    # print("Threshold = " + str(x))
-    # low_threshold = scale1
     low_threshold = scale2_var.get()
     convert_image()
 
@@ -444,6 +550,9 @@ def list_to_gcode(list1):
     len_list = len(list1)
     gcode_list = []
 
+    plunge = float(plunge_depth.get())
+    safe = float(safe_travel.get())
+
     MyFile = open('output.nc', 'w')
 
     image_resize_width = int(x_res.get())
@@ -458,14 +567,16 @@ def list_to_gcode(list1):
             x = x * image_resize_width / image_width
             y = y * image_resize_height / image_height
             if j == 0:
-                gcode_list.append("G0Z5F800\n")
+                #gcode_list.append("G0Z5F800\n")
+                gcode_list.append("G0Z"+str(safe) +"F800\n")
                 gcode_list.append("G1X" + str(x) + "Y" + str(y) + "\n")
-                gcode_list.append("G0Z-1F800\n")
+                #gcode_list.append("G0Z-1F800\n")
+                gcode_list.append("G0Z"+str(plunge) +"F800\n")
                 gcode_list.append("F800\n")
             else:
                 string1 = "G0X" + str(x) + "Y" + str(y) + "\n"
                 gcode_list.append(string1)
-
+    gcode_list.append("G0Z" + str(safe) + "F800\n")
     for element in gcode_list:
         MyFile.write(element)
     # print(gcode_list)
@@ -473,6 +584,7 @@ def list_to_gcode(list1):
 
 
 def visualise_gcode(final_list):
+    global c1
     # print("Number of paths to draw: " +str(len(final_list)))
     c1.delete("all")
     for i in range(len(final_list)):
@@ -544,6 +656,8 @@ def generate_gcode():
 
 def update_image():
     convert_image()
+def update_image_advanced():
+    convert_image_advanced()
 
 
 def mouse_released_callback(event):
@@ -562,7 +676,9 @@ def mouse_pressed_callback(event):
     start_y = event.y
 
 
-def main():
+
+
+def main_old():
     global filename, var1, var2, progress1, labelprogress,panel2
     master.geometry("1280x900")
     master.title("ImageToGCodeGenerator")
@@ -574,7 +690,7 @@ def main():
     b3 = Button(master, text="Generate Gcode", command=generate_gcode)
     b3.place(x=300, y=20)
 
-    c1.place(x=600, y=30)
+#    c1.place(x=600, y=30)
 
     chk1 = Checkbutton(master, text="EdgeDetect", variable=var1, command=update_image)
     chk1.place(x=20, y=60)
@@ -662,5 +778,190 @@ def main():
 
     master.mainloop()
 
+
+def update_image_edgedetect():
+    global backup,image_to_show, image_width, image_height, panel2, g_threshold, edge, low_threshold, start_x, start_y, end_x, end_y, convert_section
+    panel2.destroy()
+    backup = edge.copy()
+    if var1.get() == 1:
+        edge = edge.filter(ImageFilter.FIND_EDGES)
+    else:
+        edge = backup.copy()
+        print("Reverting to backup")
+    image_to_show = ImageTk.PhotoImage(edge)
+    panel2 = Label(master, image=image_to_show)
+    panel2.image = image_to_show
+    panel2.place(x=650, y=450)
+    panel2.bind("<Button-1>", mouse_pressed_callback)
+    panel2.bind("<ButtonRelease-1>", mouse_released_callback)
+
+
+
+
+def main():
+    global c1,nb2_tab1,nb2_tab2,filename, var1, var2, progress1, labelprogress,panel2
+    master.geometry("1480x900")
+    master.title("ImageToGCodeGenerator")
+
+    b1 = Button(master, text="Open File", command=callback_advanced,bg='lightgrey',fg='black')
+    b1.place(x=10, y=10)
+
+    nb = Notebook(master, width=1450, height=300)
+    nb.place(x=10, y=50)
+
+
+    tab1 = Frame(nb)
+    tab2 = Frame(nb)
+    tab3 = Frame(nb)
+    tab4 = Frame(nb)
+    tab5 = Frame(nb)
+
+    nb.add(tab1,text=" Image Geometry ")
+    nb.add(tab2,text=" Image Enhance ")
+    nb.add(tab3,text=" Image Filter ")
+    nb.add(tab4,text=" Image Binary ")
+    nb.add(tab5,text=" GCODE Settings ")
+
+
+    nb2 = Notebook(master, width=550, height=550)
+    nb2.place(x=910, y=420)
+    nb2_tab1 = Frame(nb2)
+    nb2_tab2 = Frame(nb2)
+    nb2.add(nb2_tab1,text = " Modified" )
+    nb2.add(nb2_tab2,text = " GCODE Visualization" )
+
+    panel2 = Label(nb2_tab1)
+    panel2.place(x=0,y=0)
+
+    c1 = Canvas(nb2_tab2, width=500, height=400, bg='lightgreen')
+    c1.place(x=0,y=0)
+
+    #FILTERS
+
+    chk1 = Checkbutton(tab3, text="EdgeDetect", variable=var1, command=update_image_advanced)
+    chk1.place(x=20, y=20)
+
+    chk4 = Checkbutton(tab3, text="Blur", variable=var_blur, command=update_image_advanced)
+    chk4.place(x=20, y=60)
+
+    chk5 = Checkbutton(tab3, text="Contour", variable=var_contour, command=update_image_advanced)
+    chk5.place(x=20, y=100)
+
+    chk6 = Checkbutton(tab3, text="Smooth", variable=var_smooth, command=update_image_advanced)
+    chk6.place(x=20, y=140)
+
+    chk6 = Checkbutton(tab3, text="Sharpen", variable=var_sharpen, command=update_image_advanced)
+    chk6.place(x=20, y=180)
+
+    chk6 = Checkbutton(tab3, text="Gauss Blur", variable=var_gauss_blur, command=update_image_advanced)
+    chk6.place(x=20, y=220)
+    entryGauseBlur =Entry(tab3,textvariable = gausradius,width=10)
+    entryGauseBlur.place(x = 150, y = 220)
+    entryGauseBlur.insert(0,'2')
+
+    #BINARY OPTIONS
+
+    #    scale1 = Scale(master,from_=0,to=255,orien=HORIZONTAL,command=scale_update,length=250)
+    scale1 = Scale(tab4, from_=0, to=255, orien=HORIZONTAL, length=250, variable=scale1_var)
+    scale1.bind("<ButtonRelease-1>", scale_update_advanced)
+    scale1.place(x=20, y=70)
+    label_high_th = Label(tab4, text="Upper Black Threshold")
+    label_high_th.place(x=280, y=90)
+
+    scale2 = Scale(tab4, from_=0, to=255, orien=HORIZONTAL, length=250, variable=scale2_var)
+    scale2.place(x=20, y=110)
+    scale2.bind("<ButtonRelease-1>", scale_update2_advanced)
+    label_low_th = Label(tab4, text="Lower Black Threshold")
+    label_low_th.place(x=280, y=130)
+
+
+
+    chk3 = Checkbutton(tab4, text="Binarise", variable=binarize, command=update_image_advanced)
+    chk3.place(x=20, y=25)
+
+    chk2 = Checkbutton(tab4, text="Invert", variable=var2, command=update_image_advanced)
+    chk2.place(x=20, y=50)
+
+
+    #ENHANCE
+    scale3 = Scale(tab2, from_=0, to=100, orien=HORIZONTAL, length=250, variable=scale3_var)
+    scale3.set(value=10)
+    scale3.place(x=40, y=20)
+    scale3.bind("<ButtonRelease-1>", scale_update3_advanced)
+    label_contrast = Label(tab2, text="Contrast")
+    label_contrast.place(x=300, y=40)
+
+    scale4 = Scale(tab2,resolution=0.01, from_=0, to=1, orien=HORIZONTAL, length=250, variable=scale4_var)
+    scale4.set(value=1)
+    scale4.place(x=40, y=60)
+    scale4.bind("<ButtonRelease-1>", process_data_advanced)
+    label_brightness = Label(tab2, text="Brightness")
+    label_brightness.place(x=300, y=80)
+
+    scale5 = Scale(tab2,resolution=0.01, from_=0, to=2, orien=HORIZONTAL, length=250, variable=scale5_var)
+    scale5.set(value=1)
+    scale5.place(x=40, y=100)
+    scale5.bind("<ButtonRelease-1>", process_data_advanced)
+    label_colour = Label(tab2, text="Colour")
+    label_colour.place(x=300, y=120)
+
+
+    #GEOMETRY
+    chk7 = Checkbutton(tab1, text="Flip Vertical", variable=var_flipv, command=update_image_advanced)
+    chk7.place(x=240, y=90)
+    chk8 = Checkbutton(tab1, text="Flip Horizontal", variable=var_fliph, command=update_image_advanced)
+    chk8.place(x=360, y=90)
+
+    #GCODE
+    progress1 = Progressbar(tab5, length=250, mode='determinate')
+    progress1.place(x=1000, y=140)
+
+    progress1['value'] = 0
+
+    b3 = Button(tab5, text="Generate Gcode", command=generate_gcode)
+    b3.place(x=1280, y=130)
+
+    labelprogress = Label(tab5, text="Current Task: Idle")
+    labelprogress.place(x=1000, y=115)
+
+    tBox1 = Entry(tab5, text="Xres", textvariable=x_res, width=5)
+    tBox1.insert(0, '400')
+    tBox1.place(x=20, y=20)
+    tbox1_label = Label(tab5, text="Required width of gcode(mm)")
+    tbox1_label.place(x=70, y=20)
+
+    tBox2 = Entry(tab5, text="Yres", textvariable=y_res, width=5)
+    tBox2.insert(0, '300')
+    tBox2.place(x=20, y=50)
+    tbox2_label = Label(tab5, text="Required height of gcode(mm)")
+    tbox2_label.place(x=70, y=50)
+
+    tBox3 = Entry(tab5, textvariable=spacing, width=5)
+    tBox3.insert(0, '2')
+    tBox3.place(x=20, y=80)
+    tbox3_label = Label(tab5, text="Join points seperated by(mm)")
+    tbox3_label.place(x=70, y=80)
+
+    tBox3 = Entry(tab5, textvariable=remove_short, width=5)
+    tBox3.insert(0, '2')
+    tBox3.place(x=20, y=110)
+    tbox3_label = Label(tab5, text="Remove paths shorter than(mm)")
+    tbox3_label.place(x=70, y=110)
+
+    tBox4 = Entry(tab5, textvariable=safe_travel, width=5)
+    tBox4.insert(0, '5')
+    tBox4.place(x=20, y=140)
+    tbox4_label = Label(tab5, text="Safe Travel(mm)")
+    tbox4_label.place(x=70, y=140)
+
+    tBox5 = Entry(tab5, textvariable=plunge_depth, width=5)
+    tBox5.insert(0, '-1')
+    tBox5.place(x=20, y=170)
+    tbox5_label = Label(tab5, text="Plunge Depth(mm)")
+    tbox5_label.place(x=70, y=170)
+
+
+
+    master.mainloop()
 
 main()
