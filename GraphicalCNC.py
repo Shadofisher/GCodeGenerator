@@ -1,3 +1,4 @@
+import cv2
 from tkinter import *
 from tkinter.ttk import Progressbar
 from tkinter.ttk import Notebook
@@ -22,6 +23,10 @@ g_threshold = 0
 low_threshold = 0
 image_resize_width = 200
 image_resize_height = 180
+
+image_x = 500;
+image_y = 400;
+
 image_to_show =""
 edge = ""
 progress1 = ""
@@ -33,6 +38,7 @@ c1 = ''
 
 nb2 = ''
 panel2 = ''
+panel = ''
 
 filename = ""
 
@@ -47,6 +53,9 @@ var_smooth = IntVar()
 var_sharpen = IntVar()
 var_flipv = IntVar()
 var_fliph = IntVar()
+
+var_rotate = IntVar()
+rotate_angle = StringVar()
 
 var1 = IntVar()
 var2 = IntVar()
@@ -87,10 +96,27 @@ def process_data():
     panel.place(x=50, y=450)
 
 def process_data_advanced(x):
-    global filename, master, img1
+    global filename, master, img1,panel,image_x,image_y
+    if panel:
+        panel.destroy()
     print("Filname  to process: " + str(filename))
     img1 = ImagePIL.open(filename)
-    img2 = img1.resize((500, 400))
+    image_x,image_y = img1.size
+    print(img1.size)
+    if (image_x>=image_y):
+        image_y = 500*(image_y/image_x)
+        image_x = 500
+        print(image_x)
+        print(image_y)
+
+    else:
+        image_x = 500*(image_x/image_y)
+        image_y = 500
+
+
+#    img2 = img1.resize((500, 400))
+    img2 = img1.resize((int(image_x), int(image_y)))
+    print(img2.size)
     enhancer = ImageEnhance.Contrast(img2)
     img2 = enhancer.enhance(scale3_var.get()/10)
     enhancer2 = ImageEnhance.Brightness(img2)
@@ -192,13 +218,14 @@ def modify_final():
 
 
 def convert_image_advanced():
-    global nb2,nb2_tab1,image_to_show, image_width, image_height, panel2, g_threshold, edge, low_threshold, start_x, start_y, end_x, end_y, convert_section
+    global image_x,image_y,nb2,nb2_tab1,image_to_show, image_width, image_height, panel2, g_threshold, edge, low_threshold, start_x, start_y, end_x, end_y, convert_section
     print(img1.size)
     panel2.destroy()
-    img = img1.resize((500, 400))
+    img = img1.resize((int(image_x), int(image_y)))
     grey = img.convert("L")
     image_width, image_height = img.size
     edge = grey;
+
 
     enhancer1 = ImageEnhance.Contrast(edge)
     edge = enhancer1.enhance(scale3_var.get()/10)
@@ -207,12 +234,22 @@ def convert_image_advanced():
     enhancer3 = ImageEnhance.Color(edge)
     edge = enhancer3.enhance(float(scale5_var.get()))
 
+    if var_rotate.get() == 1:
+        print("Angele: " +str(rotate_angle.get()))
+        #var_rotate.set(value = 0)
+        edge = edge.rotate(int(rotate_angle.get()))
+        #edge = edge.rotate(60)
+        #edge = edge.transpose(ImagePIL.ROTATE_90)
+        rotate_angle.set(value = 0)
+
     if var_gauss_blur.get() == 1:
         edge = edge.filter(ImageFilter.GaussianBlur(int(gausradius.get())))
     if var_flipv.get() == 1:
         edge = edge.transpose(ImagePIL.FLIP_TOP_BOTTOM)
     if var_fliph.get()==1:
         edge = edge.transpose(ImagePIL.FLIP_LEFT_RIGHT)
+    if var_contour.get() == 1:
+        edge = edge.filter(ImageFilter.CONTOUR)
     if var1.get() == 1:
         edge = edge.filter(ImageFilter.FIND_EDGES)
     if var_blur.get() == 1:
@@ -911,6 +948,13 @@ def main():
     chk7.place(x=240, y=90)
     chk8 = Checkbutton(tab1, text="Flip Horizontal", variable=var_fliph, command=update_image_advanced)
     chk8.place(x=360, y=90)
+
+    chk10 = Checkbutton(tab1, text="Rotate", variable=var_rotate, command=update_image_advanced)
+    chk10.place(x=240, y=150)
+    rotate_entry = Entry(tab1,width=4,textvariable = rotate_angle)
+    rotate_entry.insert(0,'0')
+    rotate_entry.place(x=340, y=150)
+    
 
     #GCODE
     progress1 = Progressbar(tab5, length=250, mode='determinate')
