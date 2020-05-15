@@ -183,10 +183,11 @@ def binarize_array_section(numpy_array,start_x,start_y,end_x,end_y, low_threshol
 def binarize_array(numpy_array, low_threshold=50, threshold=100):
     """Binarize a numpy array."""
     global var2
+    invert = var2.get();
     for i in range(len(numpy_array)):
         for j in range(len(numpy_array[0])):
             if numpy_array[i][j] > low_threshold and numpy_array[i][j] <= threshold:
-                if var2.get() == 1:
+                if invert == 1:
                     numpy_array[i][j] = 255
                 else:
                     numpy_array[i][j] = 0
@@ -236,11 +237,12 @@ def convert_image_advanced():
 
     if var_rotate.get() == 1:
         print("Angele: " +str(rotate_angle.get()))
+        #edge = edge.resize((int(image_y),int(image_x)))
         #var_rotate.set(value = 0)
-        edge = edge.rotate(int(rotate_angle.get()))
+        #edge = edge.rotate(int(rotate_angle.get()))
         #edge = edge.rotate(60)
-        #edge = edge.transpose(ImagePIL.ROTATE_90)
-        rotate_angle.set(value = 0)
+        edge = edge.transpose(ImagePIL.ROTATE_90)
+        #rotate_angle.set(value = 0)
 
     if var_gauss_blur.get() == 1:
         edge = edge.filter(ImageFilter.GaussianBlur(int(gausradius.get())))
@@ -584,6 +586,7 @@ def join_shortened(optimised_list):
 
 
 def list_to_gcode(list1):
+    global edge
     len_list = len(list1)
     gcode_list = []
 
@@ -592,17 +595,20 @@ def list_to_gcode(list1):
 
     MyFile = open('output.nc', 'w')
 
-    image_resize_width = int(x_res.get())
-    image_resize_height = int(y_res.get())
+    #image_resize_width = int(x_res.get())
+    #image_resize_height = int(y_res.get())
+    scale_value = float(x_res.get())
+
 
     print("GCODE: " + str(image_resize_width) + str(image_resize_height))
-
+    image_width,image_height = edge.size
+    print("GCODE SIZEE:" +str(image_width) +" "+str(image_height))
     for i in range(len_list):
         sublist = list1[i]
         for j in range(len(sublist)):
             x, y = sublist[j]
-            x = x * image_resize_width / image_width
-            y = y * image_resize_height / image_height
+            x = x * float(scale_value)#image_resize_width / image_width
+            y = y * float(scale_value)#image_resize_height / image_height
             if j == 0:
                 #gcode_list.append("G0Z5F800\n")
                 gcode_list.append("G0Z"+str(safe) +"F800\n")
@@ -870,7 +876,7 @@ def main():
     panel2 = Label(nb2_tab1)
     panel2.place(x=0,y=0)
 
-    c1 = Canvas(nb2_tab2, width=500, height=400, bg='lightgreen')
+    c1 = Canvas(nb2_tab2, width=500, height=500, bg='lightgreen')
     c1.place(x=0,y=0)
 
     #FILTERS
@@ -968,17 +974,17 @@ def main():
     labelprogress = Label(tab5, text="Current Task: Idle")
     labelprogress.place(x=1000, y=115)
 
-    tBox1 = Entry(tab5, text="Xres", textvariable=x_res, width=5)
+    tBox1 = Entry(tab5, text="Scale", textvariable=x_res, width=5)
     tBox1.insert(0, '400')
     tBox1.place(x=20, y=20)
-    tbox1_label = Label(tab5, text="Required width of gcode(mm)")
+    tbox1_label = Label(tab5, text="Scale: 1 = original size(500mm x 500mm)")
     tbox1_label.place(x=70, y=20)
 
-    tBox2 = Entry(tab5, text="Yres", textvariable=y_res, width=5)
-    tBox2.insert(0, '300')
-    tBox2.place(x=20, y=50)
-    tbox2_label = Label(tab5, text="Required height of gcode(mm)")
-    tbox2_label.place(x=70, y=50)
+    #tBox2 = Entry(tab5, text="Yres", textvariable=y_res, width=5)
+    #tBox2.insert(0, '300')
+    #tBox2.place(x=20, y=50)
+    #tbox2_label = Label(tab5, text="Required height of gcode(mm)")
+    #tbox2_label.place(x=70, y=50)
 
     tBox3 = Entry(tab5, textvariable=spacing, width=5)
     tBox3.insert(0, '2')
